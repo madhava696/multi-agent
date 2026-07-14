@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+langchain
+langgraph
+langfuse
+pydantic
+python-dotenv
+openai
+redis
+elasticsearch
+httpx
+PyJWT
+passlib
+email-validator
