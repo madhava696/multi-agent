@@ -40,3 +40,12 @@ class AuthService:
         
         return UserResponse(email=request.email)
     
+
+    def get_user(self,email:str)->Optional[UserResponse]:
+        key = self.memory_service.user_key(email)
+        stored_user = self.memory_service.get_value(key)
+        if not stored_user:
+            return None
+        payload = json.loads(stored_user)
+        return UserResponse(email=payload["email"])
+
