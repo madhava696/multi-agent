@@ -7,7 +7,7 @@ from app.config.settings import settings
 
 class TokenService:
 
-    def create_token(self,subject:str)->str:
+    def create_access_token(self,subject:str)->str:
         expires_at = datetime.now(timezone.utc)+timedelta(minutes=settings.auth_token_expiry_minutes)
         payload :Dict[str,Any]={
             "sub":subject,
