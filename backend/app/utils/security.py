@@ -1,6 +1,6 @@
 from passlib.context import CryptContext
 
-password_context = CryptContext(schemes=["pbkdf2_sha256"],depricated="auto")
+password_context = CryptContext(schemes=["pbkdf2_sha256"])
 
 def hash_password(password:str)->str:
     return password_context.hash(password)

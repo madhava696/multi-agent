@@ -1,6 +1,7 @@
 import json
 from typing import Dict,List,Optional
 from pydantic import EmailStr
+import redis
 
 class RedisMemoryService:
     def __init__(self, url : str, ttl_seconds : int):
@@ -10,15 +11,18 @@ class RedisMemoryService:
         self._memory_store : Dict[str,List[Dict[str,str]]]={}
         self._kv_store : Dict[str,str] = {}
 
+    def connect(self):
         try:
-            import importlib
+            self._client  = redis.Redis.from_url(self.url,decode_responses=True)
 
-            redis_module = importlib.import_module("redis")
-            self._client = redis_module.from_url(url,decode_response=True)
-            self._client.ping()
-        except Exception:
+        except Exception as e:
+            print(f"Redis Connection failed:{e}")
+    
+
+    def disconnect(self):
+        if self._client:
+            self._client.close()#closes the connection pool
             self._client = None
-
         
     def conversation_key(self,conversation_id : str) -> str:
         return f"conversation:{conversation_id}:messages"
@@ -49,7 +53,7 @@ class RedisMemoryService:
                 pass
         self._memory_store.setdefault(conversation_id,[]).append(payload)
 
-        def clear_message(self,conversation_id:str)->None:
+    def clear_message(self,conversation_id:str)->None:
             if self._client:
                 try:
                     self._client.delete(self.conversation_key(conversation_id))
@@ -60,7 +64,7 @@ class RedisMemoryService:
             self._memory_store.pop(conversation_id,None)
 
 
-        def get_value(self,key:str)->Optional[str]:
+    def get_value(self,key:str)->Optional[str]:
             if self._client:
                 try:
                     return self._client.get(key)
@@ -69,7 +73,7 @@ class RedisMemoryService:
                 
             return self._kv_store.get(key)
 
-        def set_value(self, key: str, value: str, ttl: Optional[int] = None) -> None:
+    def set_value(self, key: str, value: str, ttl: Optional[int] = None) -> None:
             """
             Set a key-value pair in Redis or in-memory store.
 
@@ -93,9 +97,12 @@ class RedisMemoryService:
                     pass
             
             self._kv_store[key]=value
-
-        @property
-        def using_redis(self) ->bool:
-            return self._client is not None
+    
+    @property
+    def using_redis(self) -> bool:
+        try:
+            return self._client is not None and self._client.ping()
+        except Exception:
+            return False
 
                
