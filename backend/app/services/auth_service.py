@@ -10,7 +10,7 @@ class AuthService:
     def __init__(self,memory_service:RedisMemoryService):
         self.memory_service= memory_service
 
-    def resgister_user(self,request:RegisterRequest)->UserResponse:
+    def register_user(self,request:RegisterRequest)->UserResponse:
         key = self.memory_service.user_key(request.email)
         
         is_existing = self.memory_service.get_value(key)
@@ -34,7 +34,7 @@ class AuthService:
         if not stored_user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="USER NOT FOUND")
 
-        payload = json. loads(stored_user)
+        payload = json.loads(stored_user)
         if not verify_password(request.password, payload["hashed_password"]):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="INVALID CREDENTIALS",headers="WWW-Authenticate")
         

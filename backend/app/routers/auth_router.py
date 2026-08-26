@@ -28,7 +28,7 @@ token_service = TokenService()
 def register(request : RegisterRequest)->UserResponse:
     logger.info("Register request received",extra={"user_id":request.email})
     try:
-        user = auth_service.resgister_user(request)
+        user = auth_service.register_user(request)
         logger.info("Register request complete",extra={"user_id":request.email})
         return user
     except ValueError as e:
