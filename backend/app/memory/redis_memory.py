@@ -28,7 +28,7 @@ class RedisMemoryService:
         return f"conversation:{conversation_id}:messages"
     
     def user_key(self,email:EmailStr) ->str:
-        return f"user;{email}"
+        return f"user:{email}"
     
     def get_messages(self,conversation_id:str)->List[Dict[str,str]]:
 
@@ -49,8 +49,9 @@ class RedisMemoryService:
                 self._client.rpush(key,json.dumps(payload))
                 self._client.expire(key,self.ttl_seconds)
                 return
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Redis append_message failed: {type(e).__name__}: {e}")
+
         self._memory_store.setdefault(conversation_id,[]).append(payload)
 
     def clear_message(self,conversation_id:str)->None:
@@ -58,8 +59,8 @@ class RedisMemoryService:
                 try:
                     self._client.delete(self.conversation_key(conversation_id))
                     return
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"Redis clear_message failed: {type(e).__name__}: {e}")
                     
             self._memory_store.pop(conversation_id,None)
 
@@ -93,8 +94,9 @@ class RedisMemoryService:
                         expiry = ttl if ttl is not None else self.ttl_seconds
                         self._client.setex(key,expiry,value)
                     return 
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"Redis set_message failed: {type(e).__name__}: {e}")
+
             
             self._kv_store[key]=value
     
