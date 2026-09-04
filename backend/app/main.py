@@ -6,7 +6,9 @@ from app.routers.auth_router import router as auth_router
 from app.routers.health_router import router as health_router
 from app.config.settings import settings
 from app.memory.redis_memory import RedisMemoryService
+from app import logging_config
 
+#logging_config.configure_uvicorn_logging() #remove comment to see logs in cmd line
 logger = logging.getLogger(__name__)
 
 memory_service  = RedisMemoryService(settings.redis_url, settings.redis_ttl_seconds)

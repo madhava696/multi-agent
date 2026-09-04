@@ -266,3 +266,26 @@ def configure_uvicorn_logging() -> bool:
             logger.removeHandler(handler)
 
     return True
+
+"""
+Application
+    │
+    ▼
+set_log_context()
+    │
+    ▼
+ContextVar
+    │
+    ▼
+ContextFilter / Formatters
+    │
+    ├── Console Logs
+    │      └── ColoredFormatter
+    │
+    └── File Logs
+           ├── ContextFormatter
+           └── JSONFormatter
+                    │
+                    ▼
+              Rotating Files
+"""
