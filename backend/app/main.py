@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.routers.auth_router import router as auth_router
 from app.routers.health_router import router as health_router
+from app.routers.ingest_router import router as ingest_router
 from app.config.settings import settings
 from app.memory.redis_memory import RedisMemoryService
 from app import logging_config
@@ -39,6 +40,7 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(auth_router)
+app.include_router(ingest_router)
 
 
 logger.info(

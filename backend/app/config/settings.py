@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     backend_cors_origins: List[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://192.168.0.247:3000"
     ]
 
     llm_provider: Literal["ollama", "huggingface"] = "ollama"
