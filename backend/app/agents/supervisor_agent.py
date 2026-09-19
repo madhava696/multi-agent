@@ -1,6 +1,6 @@
 import logging
 from app.config.settings import settings
-from app.prompts import LLMPrompts
+from app.prompts.LLMPrompts import LLMPrompts
 from app.services.llm_service import LLMService, ModelCapability
 from typing import Optional
 
@@ -140,6 +140,5 @@ class SupervisorAgent:
         logger.info(
             "Supervisor selected route.",
             extra={"route": route, "message_preview": message[:120]},
-        )
-        
+        )  
         return route

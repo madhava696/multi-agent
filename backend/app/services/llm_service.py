@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List, Optional
 from enum import Enum
 from openai import OpenAI
-from app.prompts import LLMPrompts
+from app.prompts.LLMPrompts import LLMPrompts
 from app.config.settings import settings
 
 if settings.langfuse_enabled:

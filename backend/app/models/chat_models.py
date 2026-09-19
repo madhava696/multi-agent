@@ -15,6 +15,8 @@ class SearchResult(BaseModel):
     snippet : str
     score : float
     source : str 
+    page_number : Optional[int] = None
+    file_name : Optional[str] = None
 
 class AgentResult(BaseModel):
     agent : str
@@ -26,11 +28,11 @@ class ChatResponse(BaseModel):
     route : str
     answer : str
     agents_used : List[str]
-    agent_result : List[AgentResult]
+    agent_results : List[AgentResult]
     cached : bool = False
-    context_message : int = 0
+    context_messages : int = 0
 
 class ConversationContextResponse(BaseModel):
     conversation_id : str
     message_count : int
-    message : List[Dict[str,str]] 
+    messages : List[Dict[str,str]] 

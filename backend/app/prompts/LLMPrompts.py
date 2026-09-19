@@ -10,25 +10,22 @@ class LLMPrompts:
     """
     
     @staticmethod
-    
-    
     def summarization(text: str, context: str = "") -> str:
         return f"""You are answering a user's question using retrieved business documents.
+            Question:
+            {text}
 
-Question:
-{text}
+            Conversation context:
+            {context}
 
-Conversation context:
-{context}
+            Instructions:
+            - Give the direct answer first, not a meta-summary of the question.
+            - If the answer contains a numeric value, include the exact value.
+            - Keep the answer concise and factual.
+            - Do not say phrases like "The user is asking..." or "This question is about...".
+            - If the answer is not fully certain, say what is supported by the available data only.
 
-Instructions:
-- Give the direct answer first, not a meta-summary of the question.
-- If the answer contains a numeric value, include the exact value.
-- Keep the answer concise and factual.
-- Do not say phrases like "The user is asking..." or "This question is about...".
-- If the answer is not fully certain, say what is supported by the available data only.
-
-Answer:"""
+            Answer:"""
                 
     @staticmethod
     def code_generation(description: str, language: str = "python") -> str:

@@ -5,12 +5,7 @@ import os
 import tempfile
 from pathlib import Path
 from app.config.settings import settings
-# from app.data_ingest.file_ingest import (
-#     detect_file_type,
-#     load_documents_from_directory,
-#     load_documents_from_file,
-#     load_documents_from_csv
-# )
+from app.data_ingest.csv_ingest import load_documents_from_csv
 from app.dependencies.auth_dependencies import get_current_user
 from app.models.auth_models import UserResponse
 from app.models.ingest_models import (
@@ -25,13 +20,59 @@ router = APIRouter(prefix=settings.api_prefix, tags=["ingest"])
 logger = logging.getLogger(__name__)
 
 search_service = SearchService()
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+
+
+def resolve_backend_path(path: str) -> Path:
+    requested_path = Path(path)
+    if requested_path.is_absolute():
+        return requested_path
+    return BACKEND_DIR / requested_path
+
+
+def detect_file_type(file_name: str) -> str:
+    file_type = Path(file_name).suffix.lower().lstrip(".")
+    if file_type != "csv":
+        raise ValueError(f"Unsupported file type: {file_type or 'unknown'}")
+    return file_type
+
+
+def load_documents_from_file(file_path: str, file_type: str) -> list[dict]:
+    if file_type == "csv":
+        return load_documents_from_csv(file_path)
+    raise ValueError(f"Unsupported file type: {file_type}")
+
+
+def load_documents_from_directory(
+    directory_path: str,
+    file_types: list[str] | None = None,
+    recursive: bool = False,
+) -> dict[str, list[dict]]:
+    directory = resolve_backend_path(directory_path)
+    if not directory.exists():
+        raise FileNotFoundError(f"Directory not found: {directory}")
+
+    allowed_types = set(file_types or ["csv"])
+    pattern = "**/*" if recursive else "*"
+    results: dict[str, list[dict]] = {}
+
+    for file_path in directory.glob(pattern):
+        if not file_path.is_file():
+            continue
+        file_type = file_path.suffix.lower().lstrip(".")
+        if file_type not in allowed_types or file_type != "csv":
+            continue
+        results[str(file_path)] = load_documents_from_csv(str(file_path))
+
+    return results
 
 
 @router.post("/ingest/sample-data", response_model=IngestResponse)
 def ingest_sample_data(current_user: UserResponse = Depends(get_current_user)) -> IngestResponse:
     logger.info("Sample ingest requested.", extra={"user_id": current_user.email})
     try:
-        documents = load_documents_from_csv("data/ai_tooling_catalog.csv")
+        source_file = resolve_backend_path("data/ai_tooling_catalog.csv")
+        documents = load_documents_from_csv(str(source_file))
         logger.info(
             "CSV documents loaded for ingest.",
             extra={"user_id": current_user.email, "document_count": len(documents)},

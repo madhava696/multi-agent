@@ -33,5 +33,5 @@ class GraphState:
     route :str ="summary"
     summary_output : str = ""
     search_output : str = ""
-    search_result : Optional[List[SearchResult]]=None
+    search_results : List[SearchResult]=field(default_factory=list)
     final_answer : str =""

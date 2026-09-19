@@ -103,6 +103,12 @@ class SearchService:
     async def search(self, query: str) -> List[SearchResult]:
         if not self._client:
             raise RuntimeError("Elasticsearch is not available. Please ingest data and start Elasticsearch.")
+        if not self._client.indices.exists(index=self.index_name):
+            logger.warning(
+                "Elasticsearch index does not exist yet.",
+                extra={"index_name": self.index_name, "query_preview": query[:120]},
+            )
+            return []
         logger.info(
             "Elasticsearch query started.",
             extra={"index_name": self.index_name, "query_preview": query[:120]},

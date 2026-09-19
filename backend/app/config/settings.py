@@ -1,3 +1,5 @@
+import os
+import os
 from typing import List, Literal
 from pydantic_settings import BaseSettings,SettingsConfigDict
 
@@ -9,6 +11,8 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://192.168.0.247:3000"
+        "https://localhost:3000",
+        "https://127.0.0.1:3000",
     ]
 
     llm_provider: Literal["ollama", "huggingface"] = "ollama"
@@ -52,3 +56,17 @@ class Settings(BaseSettings):
     )
 
 settings = Settings()
+
+if settings.langfuse_public_key:
+    os.environ.setdefault("LANGFUSE_PUBLIC_KEY", settings.langfuse_public_key)
+if settings.langfuse_secret_key:
+    os.environ.setdefault("LANGFUSE_SECRET_KEY", settings.langfuse_secret_key)
+if settings.langfuse_base_url:
+    os.environ.setdefault("LANGFUSE_HOST", settings.langfuse_base_url)
+
+if settings.langfuse_public_key:
+    os.environ.setdefault("LANGFUSE_PUBLIC_KEY", settings.langfuse_public_key)
+if settings.langfuse_secret_key:
+    os.environ.setdefault("LANGFUSE_SECRET_KEY", settings.langfuse_secret_key)
+if settings.langfuse_base_url:
+    os.environ.setdefault("LANGFUSE_HOST", settings.langfuse_base_url)

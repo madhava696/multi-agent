@@ -27,15 +27,15 @@ class SearchAgent:
 
         self.search_service = search_service
 
-        @observe(name="search_agent")
-        async def run(self,state:GraphState)->AgentResult:
+    @observe(name="search_agent")
+    async def run(self,state:GraphState)->AgentResult:
             logger.info(
                 "Search agent started",
                 extra={"route":state.route,"message_previe":state.user_message[:120]},
             )
 
             results = await self.search_service.search(state.user_message)
-            state.search_result = results
+            state.search_results = results
 
             lines = [
                 f"{index+1},{item.title} (score={item.score:.2f})-{item.snippet}"
@@ -47,7 +47,7 @@ class SearchAgent:
             state.search_output=output
             logger.info(
                 "search agent completed",
-                extra = {"results_count":len(results),"index_name":self.search_sevice.index_name},
+                extra = {"results_count":len(results),"index_name":self.search_service.index_name},
             )
 
             return AgentResult(
@@ -55,7 +55,7 @@ class SearchAgent:
                 output=output,
                 metadata={
                     "results_count":len(results),
-                    "index_name":self.search_sevice.index_name
+                    "index_name":self.search_service.index_name
                 }
             )
 """
