@@ -11,17 +11,11 @@ logging:
 from fastapi import APIRouter,HTTPException,status
 
 from app.config.settings import settings
-from app.memory.redis_memory import RedisMemoryService
 from app.models.auth_models import LoginRequest,RegisterRequest,TokenResponse,UserResponse
-from app.services.auth_service import AuthService
-from app.services.token_service import TokenService
+from app.dependencies.services import auth_service, token_service
 
 router  = APIRouter(prefix=settings.api_prefix+"/auth",tags=["auth"])
 logger  = logging.getLogger(__name__)
-
-memory_service =RedisMemoryService(settings.redis_url,ttl_seconds=settings.redis_ttl_seconds)
-auth_service = AuthService(memory_service)
-token_service = TokenService()
 
 
 @router.post("/register",response_model=UserResponse,status_code=status.HTTP_201_CREATED)
