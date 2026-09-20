@@ -113,15 +113,46 @@ class LLMService:
             return custom_model
         
         default_models = {
-            ModelCapability.SUMMARIZATION: "deepseek-ai/DeepSeek-V4-Pro",
+            ModelCapability.SUMMARIZATION: settings.huggingface_model,
             ModelCapability.CODE_GENERATION: "Qwen/Qwen2.5-Coder-7B-Instruct",
-            ModelCapability.QUESTION_ANSWERING: "meta-llama/Llama-3.2-3B-Instruct",
-            ModelCapability.REASONING: "deepseek-ai/DeepSeek-V4-Pro",
+            ModelCapability.QUESTION_ANSWERING: settings.huggingface_model,
+            ModelCapability.REASONING: settings.huggingface_model,
         }
         
-        model = default_models.get(capability, "meta-llama/Llama-3.1-8B-Instruct")
+        model = default_models.get(capability, settings.huggingface_model)
         logger.info(f"Using default model for {capability.value}: {model}")
         return model
+
+    def _get_fallback_models(
+        self,
+        selected_model: str,
+        capability: Optional[ModelCapability] = None,
+    ) -> List[str]:
+        fallback_models = [
+            selected_model,
+            settings.huggingface_model,
+            "meta-llama/Llama-3.1-8B-Instruct",
+            "mistralai/Mistral-7B-Instruct-v0.3",
+        ]
+
+        if capability == ModelCapability.CODE_GENERATION:
+            fallback_models.insert(1, "Qwen/Qwen2.5-Coder-7B-Instruct")
+
+        unique_models = []
+        for fallback_model in fallback_models:
+            if fallback_model and fallback_model not in unique_models:
+                unique_models.append(fallback_model)
+
+        return unique_models
+
+    @staticmethod
+    def _is_model_not_supported_error(error: Exception) -> bool:
+        error_text = str(error).lower()
+        return (
+            "model_not_supported" in error_text
+            or "not supported by any provider" in error_text
+            or "invalid_request_error" in error_text and "model" in error_text
+        )
     
     
     @observe(name="llm_generate")
@@ -154,33 +185,46 @@ class LLMService:
         if not model and capability:
             model = self.get_model_for_capability(capability)
         elif not model:
-            model = "meta-llama/Llama-3.1-8B-Instruct"
+            model = settings.huggingface_model
             
-        logger.info(
-            f"Generating with HuggingFace Router",
-            extra={"model": model, "temperature": temperature, "max_tokens": max_tokens}
-        )
-        
-        try:
-          completion = self.client.chat.completions.create(
-                model=model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                max_tokens=max_tokens,
-                temperature=temperature,
-          )
-          
-          response = completion.choices[0].message.content or ""
-          logger.info(f"Generated {len(response)} characters")
-            
-          return response
-        except Exception as e:
-            logger.error(f"Error generating with HuggingFace Router: {e}")
-            raise
+        for candidate_model in self._get_fallback_models(model, capability):
+            logger.info(
+                "Generating with HuggingFace Router",
+                extra={"model": candidate_model, "temperature": temperature, "max_tokens": max_tokens}
+            )
+
+            try:
+                completion = self.client.chat.completions.create(
+                    model=candidate_model,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                )
+
+                response = completion.choices[0].message.content or ""
+                logger.info(
+                    "HuggingFace Router generation completed",
+                    extra={"model": candidate_model, "response_length": len(response)},
+                )
+
+                return response
+            except Exception as e:
+                if self._is_model_not_supported_error(e) and candidate_model != self._get_fallback_models(model, capability)[-1]:
+                    logger.warning(
+                        "HuggingFace Router rejected configured model; trying fallback.",
+                        extra={"model": candidate_model, "reason": str(e)},
+                    )
+                    continue
+
+                logger.error(f"Error generating with HuggingFace Router: {e}")
+                raise
+
+        raise RuntimeError("HuggingFace Router generation failed for all configured fallback models.")
         
     async def summarize(self,text:str,context:str="") -> str:
         """Summarize text using DeepSeek-V4-Pro (best for reasoning/summarization)"""

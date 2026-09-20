@@ -12,3 +12,5 @@ httpx
 PyJWT
 passlib
 email-validator
+python-multipart
+PyPDF2

@@ -6,6 +6,13 @@ import tempfile
 from pathlib import Path
 from app.config.settings import settings
 from app.data_ingest.csv_ingest import load_documents_from_csv
+from app.data_ingest.file_ingest import (
+    FileType,
+    detect_file_type,
+    get_supported_file_types,
+    load_documents_from_directory as load_supported_documents_from_directory,
+    load_documents_from_file,
+)
 from app.dependencies.auth_dependencies import get_current_user
 from app.models.auth_models import UserResponse
 from app.models.ingest_models import (
@@ -30,41 +37,21 @@ def resolve_backend_path(path: str) -> Path:
     return BACKEND_DIR / requested_path
 
 
-def detect_file_type(file_name: str) -> str:
-    file_type = Path(file_name).suffix.lower().lstrip(".")
-    if file_type != "csv":
-        raise ValueError(f"Unsupported file type: {file_type or 'unknown'}")
-    return file_type
+def normalize_file_types(file_types: list[str] | None) -> list[FileType] | None:
+    if not file_types:
+        return None
 
+    supported_types = {"csv", "pdf"}
+    normalized = []
+    for file_type in file_types:
+        cleaned_type = file_type.lower().lstrip(".")
+        if cleaned_type not in supported_types:
+            raise ValueError(
+                f"Unsupported file type: {file_type}. Supported types: {', '.join(get_supported_file_types())}"
+            )
+        normalized.append(cleaned_type)
 
-def load_documents_from_file(file_path: str, file_type: str) -> list[dict]:
-    if file_type == "csv":
-        return load_documents_from_csv(file_path)
-    raise ValueError(f"Unsupported file type: {file_type}")
-
-
-def load_documents_from_directory(
-    directory_path: str,
-    file_types: list[str] | None = None,
-    recursive: bool = False,
-) -> dict[str, list[dict]]:
-    directory = resolve_backend_path(directory_path)
-    if not directory.exists():
-        raise FileNotFoundError(f"Directory not found: {directory}")
-
-    allowed_types = set(file_types or ["csv"])
-    pattern = "**/*" if recursive else "*"
-    results: dict[str, list[dict]] = {}
-
-    for file_path in directory.glob(pattern):
-        if not file_path.is_file():
-            continue
-        file_type = file_path.suffix.lower().lstrip(".")
-        if file_type not in allowed_types or file_type != "csv":
-            continue
-        results[str(file_path)] = load_documents_from_csv(str(file_path))
-
-    return results
+    return normalized  # type: ignore[return-value]
 
 
 @router.post("/ingest/sample-data", response_model=IngestResponse)
@@ -176,10 +163,10 @@ def ingest_batch_from_directory(
     )
     
     try:
-        file_types_list = request.file_types if request.file_types else None
-        results = load_documents_from_directory(
-            request.directory_path,
-            file_types=file_types_list,  # type: ignore
+        file_types_list = normalize_file_types(request.file_types)
+        results = load_supported_documents_from_directory(
+            str(resolve_backend_path(request.directory_path)),
+            file_types=file_types_list,
             recursive=request.recursive
         )
         
